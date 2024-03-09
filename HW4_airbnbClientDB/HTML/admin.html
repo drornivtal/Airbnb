@@ -1,0 +1,236 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title></title>
+    <!--CDN:-->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/jquery.dataTables.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/1.10.19/css/dataTables.bootstrap.min.css">
+    <link rel="stylesheet" type="text/css" href="https://cdn.datatables.net/responsive/2.2.3/css/responsive.dataTables.min.css">
+
+
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/js/bootstrap.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/jquery.dataTables.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/responsive/2.2.3/js/dataTables.responsive.min.js"></script>
+    <script type="text/javascript" src="https://cdn.datatables.net/1.10.19/js/dataTables.bootstrap.min.js"></script>
+    <script src="https://unpkg.com/sweetalert/dist/sweetalert.min.js"></script>
+
+
+    <link href="../CSS/adminCSS.css" rel="stylesheet" />
+
+    <!--Ajax Call:-->
+    <script src="../JS/ajaxCalls.js"></script>
+    <!--<------------->
+    <script>
+        $(document).ready(function () {
+
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+            { server = "https://localhost:7077" }
+            else { server = `https://proj.ruppin.ac.il/cgroup62/test2/tar1`; }
+
+            api = server+ "/api/Users";
+
+
+            renderAllUsers();
+
+            $("#managerUsersBTN").on('click', function () {
+                $('#usersForm').show();
+            });
+
+            $("#adminReportBTN").on('click', function () {
+
+                reportBySelectedMonth();
+            });
+
+            $("#logOutAdminBTN").on('click', function () {
+                window.location.href = "flats.html";
+
+            });
+
+
+            $("#usersTable").on('click', '.toggelIsActiveBtn', function () {
+
+                var userId = $(this).data('userid');
+
+                apiUpdateActive = api + '/UpdateActivityId';
+
+                ajaxCall("PUT", `${apiUpdateActive}?userId=${userId}`, "", PostSCB, PostECB);
+
+            });
+
+            $('#usersTable').on('change', '.status-checkbox', function () {
+
+                //  var rowIndex = usersTable.cell($(this).closest('td')).index().row;
+                var userEmail = $(this).data('userid');
+
+                var newStatus = $(this).prop('checked');
+                console.log('User with email ' + userEmail + ' has new status: ' + newStatus);
+                swal({
+                    title: "Are you sure to change this user activity??",
+                    text: "",
+                    icon: "warning",
+                    buttons: true,
+                    dangerMode: true
+                })
+                    .then(function (willDelete) {
+                        if (willDelete) {
+                            apiUpdateActive = api + '/UpdateActivityId';
+                            ajaxCall("PUT", `${apiUpdateActive}?userId=${userEmail}`, "", PostSCB, PostECB);
+                        }
+                        else swal("Not Deleted!");
+                    });
+            });
+        });
+
+        function PostSCB(ans) {
+            swal("ststus changed!");
+
+        }
+        function PostECB(err) {
+            alert(err);
+        }
+
+        function renderAllUsers() {
+            // alert('yofi');
+
+            ajaxCall("GET", api, "", GetSCB, GetECB)
+        }
+        function GetSCB(usersList) {
+            dataUsers = usersList.filter((user) => user.email !== 'admin@gmail.com ');
+
+            try {
+                tbl = $('#usersTable').DataTable({
+                    data: dataUsers,
+                    pageLength: 8,
+                    columns: [
+
+                        { data: "firstName" },
+                        { data: "familyName" },
+                        { data: "email" },
+                        {
+                            data: "isActive",
+                            render: function (data, type, row, meta) {
+                                let CBid = row.email;
+
+                                return '<input type="checkbox" class="status-checkbox" ' + (data ? 'checked' : '') + ' data-userid="' + CBid + '">';
+
+                            }
+
+                        }
+                    ],
+                });
+            }
+
+            catch (err) {
+                alert(err);
+            }
+        }
+        function GetECB(err) {
+            $('#usersTable').html('There is no users');
+        }
+        //monthReport
+        function reportBySelectedMonth() {
+
+            var selectedValue = $('#month').val();
+            if (selectedValue == "") {
+                $("#reportDiv").html("Must Choose month");
+                return;
+            }
+            let month = parseInt(selectedValue);
+
+            ajaxCall("GET", `${api}/month?month=${month}`, "", getSCm, getErM);
+        }
+
+        function getSCm(report) {
+
+            if (report.length == 0) {
+                $("#reportDiv").html("No vacation for this month");
+                return;
+            }
+            var selectedText = $('#month option[value="' + $('#month').val() + '"]').text();
+
+            var reportStr = "" + `<h3>Report For ${selectedText}:</h3>` + "<br />";
+
+            for (var i = 0; i < report.length; i++) {
+                let city = report[i].city;
+                let avgPrice = report[i].average;
+                reportStr += `<p><b>City:</b> ${city} || <b>Average price for night:</b> ${avgPrice}</p> `;
+            }
+            $("#reportDiv").html(reportStr);
+
+        }
+        function getErM(err) {
+            alert('server err');
+        }
+
+    </script>
+
+</head>
+<body>
+    <button type="button" id="logOutAdminBTN" class="btn btn-outline-danger btn-sm">Log Out</button><br />
+    <div class="container">
+        <h1 id="welcomwA">Welcome, Admin!</h1><br /><br />
+
+        <div class="managerUsersDiv">
+
+            <button type="button" id="managerUsersBTN" class="btn btn-outline-primary">Manage Users</button><br /><br />
+
+            <form id="usersForm" style=" display: none;">
+                <table id="usersTable" class="display nowrap">
+                    <thead>
+                        <tr>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Email</th>
+                            <th>Is Active</th>
+                            <th></th>
+                        </tr>
+                    </thead>
+                </table>
+
+            </form>
+
+
+
+        </div>
+        <div>----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------</div>
+        <div class="adminReportDiv">
+
+            <select class="form-select" id="month" name="month">
+                <option value="">month</option>
+                <option value="01">January</option>
+                <option value="02">February</option>
+                <option value="03">March</option>
+                <option value="04">April</option>
+                <option value="05">May</option>
+                <option value="06">June</option>
+                <option value="07">July</option>
+                <option value="08">August</option>
+                <option value="09">September</option>
+                <option value="10">October</option>
+                <option value="11">November</option>
+                <option value="12">December</option>
+            </select>
+            <button type="button" id="adminReportBTN" class="btn btn-outline-primary">The admin report</button><br /><br />
+        </div><br /><br />
+        <div id="reportDiv">
+
+        </div>
+
+
+
+
+    </div>
+
+</body>
+</html>

@@ -1,0 +1,302 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Flats Page</title>
+
+    <!--CDN:-->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+
+    <!--Ajax Call:-->
+    <script src="../JS/ajaxCalls.js"></script>
+
+    <!-- Latest compiled and minified CSS -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/css/bootstrap.min.css">
+
+    <!-- jQuery library -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.slim.min.js"></script>
+
+    <!-- Popper JS -->
+    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.1/dist/umd/popper.min.js"></script>
+
+    <!-- Latest compiled JavaScript -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.2/dist/js/bootstrap.bundle.min.js"></script>
+
+    <!--CSS:-->
+    <link href="../CSS/FlatCSS.css" rel="stylesheet" />
+
+    <script>
+
+
+        $(document).ready(function () {
+
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+            { server = "https://localhost:7077" }
+            else { server = `https://proj.ruppin.ac.il/cgroup62/test2/tar1`; }
+            
+            api = server + "/api/Flats";
+
+            apiLogIn = server + "/api/Users/LogIn";
+
+            sessionStorage.setItem("LogedIn", "");
+            $("#loginBtn").css("display", "block");
+            $("#logOutBtn").css("display", "none");
+            $("#backEditPBtn").css("display", "none");
+            document.getElementById('Welcome').innerHTML = `Hello guest, you need to login`;
+
+            $('.btnOrderFlat').prop('disabled', true);
+            $("#submitFlatsBtn").prop('disabled', true);
+
+            RenderAllFlats();
+
+            $("#FlatsForm").submit(function () {
+                PostNewFlat();
+                return false;
+            });
+
+            $("#myModal").submit(function () {
+                LogInUser();                
+                return false;
+            });  
+
+
+        });
+
+        function RenderAllFlats() {
+
+            ajaxCall("GET", api, "", GetSCB, GetECB);
+        }
+
+        function GetSCB(FlatsListFromServer) {
+
+            let tempStr = "";
+
+            for (var i = 0; i < FlatsListFromServer.length; i++) {
+
+                tempStr += `<div class="col-4 card" style="width: 18rem;">
+                                        <div class="card-body">
+                                        <h5 class="card-title">Flat number ${FlatsListFromServer[i].id}</h5>
+                                        <p class="card-text"> City: ${FlatsListFromServer[i].city}</p>
+                                        <p class="card-text"> Address: ${FlatsListFromServer[i].address}</p>
+                                        <p class="card-text"> Number of rooms: ${FlatsListFromServer[i].numberOfRooms}</p>
+                                        <p class="card-text"> Price: ${FlatsListFromServer[i].price}</p>
+                                        <button class="btn btn-primary btnOrderFlat" onclick="RedirectToVacations(${FlatsListFromServer[i].id})" disabled >Order</button>
+                                        </div>
+                                        </div>`;
+            }
+            $("#flatsRowPH").html(tempStr);
+        }
+
+        function GetECB(err) {
+            let tempStr = `<p id="noflatsP">Soory, no flats to show!</p>`;
+            $("#flatsRowPH").html(tempStr);
+        }
+
+        function PostNewFlat() {
+            let newFlat = {
+                id: 0,
+                city: $("#cityFInp").val(),
+                address: $("#AddresFInp").val(),
+                numberOfRooms: $("#NumOfRoomsFInp").val(),
+                price: $("#PriceFInp").val()
+            }
+            ajaxCall("POST", api, JSON.stringify(newFlat), PostSCB, PostECB);
+            $("input").val("");
+        }
+
+        function PostSCB(res) {
+            RenderAllFlats();
+        }
+
+        function PostECB(err) {
+            console.log(err);
+        }
+
+        function SetSessionStorageFlatId(flatId) {
+            sessionStorage.setItem("chosenFlat", flatId);
+        }
+
+        function LogInUser() {
+            let tempUserName = $("#usrname").val();
+            let tempPassword= $("#psw").val(),
+
+            user = {
+                email: tempUserName,
+                firstName: "",
+                familyName: "",
+                password: tempPassword
+                
+            }
+           
+            
+            ajaxCall("POST", apiLogIn, JSON.stringify(user), PostLogInSCB, PostLogInECB);
+            $("input").val("");
+        }
+
+
+        function PostLogInSCB(user) {
+
+            sessionStorage.setItem("LogedIn", JSON.stringify(user));
+           
+            if (user.isActive) {
+                if (user.isAdmin) {
+
+                    window.location.href = "admin.html";
+                }
+                document.getElementById('Welcome').innerHTML = `Hello ${user.firstName} ${user.familyName}`;
+                $("#submitFlatsBtn").prop('disabled', false);
+                $('.btnOrderFlat').prop('disabled', false);
+                $("#submitFlatsBtn").prop('disabled', false);
+                $("#loginBtn").css("display", "none");
+                $("#logOutBtn").css("display", "block");
+                $("#backEditPBtn").css("display", "block");
+
+            }
+            if (!user.isActive) {
+                alert('this user is not active');
+            }
+            
+
+        }
+        function PostLogInECB(err) {
+            console.log(err);
+        }
+
+        function LogOutUser() {
+            sessionStorage.setItem("LogedIn", "");
+            $("#loginBtn").css("display", "block");
+            $("#logOutBtn").css("display", "none");
+            $("#backEditPBtn").css("display", "none");
+            $('.btnOrderFlat').prop('disabled', true);
+            $("#submitFlatsBtn").prop('disabled', true);
+            document.getElementById('Welcome').innerHTML = `Hello guest, you need to login`;
+
+        }
+
+        function RedirectToVacations(flatId) {
+            // Set session storage flat id
+            SetSessionStorageFlatId(flatId);
+            window.location.href = "vacations.html";
+        }
+
+        function BackToEditPage() {
+            window.location.href = "EditDetails.html";
+        }
+
+
+    </script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.7.1/jquery.min.js"></script>
+    <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.4.1/js/bootstrap.min.js"></script>
+</head>
+
+
+
+<body>
+
+    <div class="container" id="FormFContainer">
+        <div>
+            <button type="button" class="btn btn-success" id="loginBtn" data-toggle="modal" data-target="#myModal" >Login</button>
+            <button type="button" class="btn btn-success" id="logOutBtn" onclick="LogOutUser()">Log Out</button>
+           
+           <!--<button href="registration%20.html" class="btn btn-success" id="signUpBtn">Sign Up</button>-->
+            <button class="btn btn-success" id="signUpBtn" onclick="window.location.href='registration%20.html'">Sign Up</button>
+          
+        </div>
+        <div id="Welcome">
+            
+        </div>
+
+        <!--Modal Start-->
+        <div class="modal fade" id="myModal" role="dialog">
+            <div class="modal-dialog">
+
+                Modal content
+                <div class="modal-content" onsubmit="">
+                    <div class="modal-header" style="padding:35px 50px;">
+                        <button type="button" class="close" data-dismiss="modal">&times;</button>
+                        <h4><span class="glyphicon glyphicon-lock"></span> Login</h4>
+                    </div>
+                    <div class="modal-body" style="padding:40px 50px;">
+                        <form role="form">
+                            <div class="form-group">
+                                <label for="usrname"><span class="glyphicon glyphicon-user"></span> Username</label>
+                                <input type="text" class="form-control" id="usrname" placeholder="Enter email">
+                            </div>
+                            <div class="form-group">
+                                <label for="psw"><span class="glyphicon glyphicon-eye-open"></span> Password</label>
+                                <input type="text" class="form-control" id="psw" placeholder="Enter password">
+                            </div>
+                            <div class="checkbox">
+                                <label><input type="checkbox" value="" checked>Remember me</label>
+                            </div>
+                            <button type="submit" class="btn btn-success btn-block"><span class="glyphicon glyphicon-off"></span> Login</button>
+                        </form>
+                       
+                    </div>
+                    <div class="modal-footer">
+                        <button type="submit" class="btn btn-danger btn-default pull-left" data-dismiss="modal"><span class="glyphicon glyphicon-remove"></span> Cancel</button>
+
+                    </div>
+                </div>
+            </div>
+        </div>
+        <!--Modal End-->
+
+        <h2> Enter new flat:</h2>
+        <form id="FlatsForm">
+            <!--<div class="form-group">
+                <label>ID:</label>
+                <input type="number" class="form-control" id="idFInp" placeholder="Enter id" required>
+            </div>-->
+
+            <div class="form-group">
+                <label for="cityList">City:</label><br />
+                <input list="cityList" class="form-control" name="city" id="cityFInp" placeholder="Choose your browser from the list" required>
+                <datalist id="cityList">
+                    <option value="Tel Aviv">
+                    <option value="Haifa">
+                    <option value="Beer Sheva">
+                    <option value="Holon">
+                    <option value="Ashdod">
+                    <option value="Jerusalem">
+                    <option value="Bat Yam">
+                    <option value="Rishon Lezion">
+                    <option value="Eilat">
+                </datalist>
+            </div>
+
+            <div class="form-group">
+                <label>Addres:</label>
+                <input type="text" class="form-control" id="AddresFInp" placeholder="Enter Addres" maxlength="25" required>
+            </div>
+
+            <div class="form-group">
+                <label>Number of rooms:</label>
+                <input type="number" class="form-control" id="NumOfRoomsFInp" placeholder="Enter number of rooms" min="1" max="8" required>
+            </div>
+
+            <div class="form-group">
+                <label>Price:</label>
+                <input type="number" class="form-control" id="PriceFInp" placeholder="Enter Price" min="0" required>
+            </div>
+
+            <button type="submit" class="btn btn-success" id="submitFlatsBtn">Submit</button>
+        </form>
+        <br /><button type="submit" class="btn btn-success" id="backEditPBtn" onclick="BackToEditPage()">Edit details</button>
+    </div>
+
+
+        <div class="container">
+            <div class="row" id="flatsRowPH"></div>
+        </div>
+</body>
+</html>

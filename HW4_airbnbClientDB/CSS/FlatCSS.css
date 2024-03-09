@@ -1,0 +1,46 @@
+﻿
+    #FlatsForm label, #VacationsForm label {
+        font-weight: 700;
+        margin-bottom: 7px;
+        margin-top: 5px;
+    }
+
+#FlatsForm input, #VacationsForm input {
+    border: 1.5px solid #000;
+    width: 30%;
+    margin-bottom: 7px;
+}
+
+.card {
+    margin: 3%;
+    margin-top: 8%;
+    padding-left: 5%;
+    border: black solid 2px;
+}
+
+#noflatsP, #noVacP {
+    width: 100%;
+    font-size: 28px;
+    font-weight: 700;
+    text-align: center;
+    margin: 10px;
+}
+
+#flatIdVInp{
+    background-color:#d1f4c6;
+}
+
+#BtnShowVactions {
+    margin-top: 3%;
+    margin-left: 10%;
+    width: 20%;
+    border:solid 2px green;
+    font-weight:bold;
+}
+
+    #BtnShowVactions:hover {
+        background-color: #d1f4c6;
+        border: solid 2px black;
+        color: black;
+    }
+

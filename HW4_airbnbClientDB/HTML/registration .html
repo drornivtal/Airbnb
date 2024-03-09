@@ -1,0 +1,129 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Register Page</title>
+
+    <!--CDN:-->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+
+    <!--Ajax Call:-->
+    <script src="../JS/ajaxCalls.js"></script>
+    <!--<------------->
+    <script>
+
+        $("document").ready(function () {
+
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+            { server = "https://localhost:7077" }
+            else { server = `https://proj.ruppin.ac.il/cgroup62/test2/tar1`; }
+
+            api = server+ "/api/Users";
+                       
+            $("#userForm").submit(function () {
+                PostNewUser();
+                return false;
+            });
+
+            $("#passwordCheck").click(function () {
+                var x = document.getElementById("passwordFInp");
+                if (x.type === "password") {
+                    x.type = "text";
+                } else {
+                    x.type = "password";
+                }
+
+            })
+
+        })
+
+        function PostNewUser() {
+
+            let tfirstName = $("#firstNameFInp").val();
+            let tlastName = $("#familyNameFInp").val();
+            let temail = $("#emailFInp").val();
+            let tpassword = $("#passwordFInp").val();
+
+            NewUser = {
+                firstName: tfirstName,
+                familyName: tlastName,
+                email: temail,
+                password: tpassword
+            }
+            console.log(NewUser);
+
+            ajaxCall("POST", api, JSON.stringify(NewUser), UPostSC, UPostEC);
+            $("input").val("");
+           $("#submitVacationsBtn").attr("disabled", true);
+        }
+
+        function UPostSC(res) {          
+            console.log(res);
+        }
+        function UPostEC(err) {
+            console.log("Error!!!");
+        }
+
+      
+
+    </script>
+    <style>
+        #userForm label {
+            font-weight: 700;
+            margin-bottom: 7px;
+            margin-top: 5px;
+        }
+
+        #userForm input {
+            border: 1.5px solid #000;
+            width: 30%;
+            margin-bottom: 7px;
+        }
+        #userForm #passwordCheck {           
+            width: auto;           
+        }
+
+    </style>
+</head>
+<body>
+    <div class="container" id="FormFContainer">
+        <h2>Registration:</h2>
+        <form id="userForm">
+            <div class="form-group">
+                <label>First Name:</label>
+                <input type="text" class="form-control" id="firstNameFInp" placeholder="Enter first name" minlength="2" required>
+            </div>
+
+            <div class="form-group">
+                <label>Family Name:</label><br />
+                <input type="text" class="form-control" id="familyNameFInp" placeholder="Enter family name" minlength="2" required>
+              
+            </div>
+
+            <div class="form-group">
+                <label>Email:</label>
+                <input type="email" class="form-control" id="emailFInp" placeholder="Enter email" required>
+            </div>
+
+            <div class="form-group">
+                <label>Password:</label>
+                <input type="password" class="form-control" id="passwordFInp" placeholder="Enter password" min="8" required>
+                <input type="checkbox" id="passwordCheck">Show Password
+
+            </div><br />
+
+            <button type="submit" class="btn btn-success" id="submitFlatsBtn">Submit</button>
+        </form>
+       
+    </div>
+</body>
+</html>

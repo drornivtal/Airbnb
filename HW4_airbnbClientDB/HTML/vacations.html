@@ -1,0 +1,225 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>Vacations Page</title>
+
+    <!--CDN:-->
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js"
+            integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo="
+            crossorigin="anonymous"></script>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
+          rel="stylesheet" integrity="sha384-T3c6CoIi6uLrA9TneNEoa7RxnatzjcDSCmG1MXxSR1GAsXEV/Dwwykc2MPK8M2HN"
+          crossorigin="anonymous">
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"
+            integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL"
+            crossorigin="anonymous"></script>
+
+    <!--Ajax call:-->
+    <script src="../JS/ajaxCalls.js"></script>
+
+    <!--Css:-->
+    <link href="../CSS/FlatCSS.css" rel="stylesheet" />
+    <script>
+
+        $("document").ready(function () {
+
+            if (location.hostname === "localhost" || location.hostname === "127.0.0.1")
+            { server = "https://localhost:7077" }
+            else { server = `https://proj.ruppin.ac.il/cgroup62/test2/tar1`; }
+
+
+            api = server +  "/api/vacations";
+
+            $('#submitVacationsBtn').prop('disabled', true);
+
+            $("#flatIdVInp").val(GetSessionStorage());
+            let LogInUser = GetSessionStorageUser();
+            if (LogInUser == "" || LogInUser == null) {
+                $('#submitVacationsBtn').prop('disabled', true);
+                $('#BtnShowVactions').prop('disabled', true);
+                
+            }
+            else {
+                $('#submitVacationsBtn').prop('disabled', false);
+                $('#BtnShowVactions').prop('disabled', false);
+            }
+            
+            let userEmail = LogInUser.email;
+
+            $("#userIdVInp").val(userEmail);
+
+            $("#endDateVInp").on("blur",  CheckValidEndDate);
+            $("#startDateVInp").on("blur", function () {
+                $("#endDateVInp").trigger('blur');
+            }); 
+
+            $("#VacationsForm").submit(function () {
+                PostNewVacation();
+                return false;
+            });
+            $("#logOutVacationBTN").on('click', function () {
+                window.location.href = "flats.html";
+
+            });
+            
+        })
+
+        function GetSessionStorage(){
+            tempItem = sessionStorage.getItem("chosenFlat");
+            if (tempItem == null) {
+                tempItem = -1;
+            }
+            return tempItem;
+        }
+
+
+        function GetSessionStorageUser() {
+            let tempItem = JSON.parse(sessionStorage.getItem("LogedIn"));       
+            return tempItem;
+        }
+
+        function CheckValidEndDate() {
+            let tempStartDate = $("#startDateVInp").val();
+
+            if (tempStartDate > this.value) {
+                this.validity.valid = false;
+                this.setCustomValidity('The end date must be greater than the start date!');
+            }
+            else {
+                let tempEndDate = $("#endDateVInp").val();
+
+                // Convert strings to Date objects
+                let startDateObj = new Date(tempStartDate);
+                let endDateObj = new Date(tempEndDate);
+
+                // Calculate the difference in days
+                let differenceInMilliseconds = endDateObj - startDateObj;
+                let differenceInDays = Math.floor(differenceInMilliseconds / (1000 * 60 * 60 * 24));
+
+                if (differenceInDays > 20) {
+                    this.validity.valid = false;
+                    this.setCustomValidity('The vacation cannot exceed 20 days!');
+                } else {
+                    this.validity.valid = true;
+                    this.setCustomValidity('');
+                }
+            }
+        }
+
+        function PostNewVacation() {
+
+            let NewVacation = {
+           
+                id : 0,
+                userEmail :$("#userIdVInp").val(),
+                flatId :$("#flatIdVInp").val(),
+                startDate : $("#startDateVInp").val(),
+                endDate : $("#endDateVInp").val(),
+            }
+
+            ajaxCall("POST", api, JSON.stringify(NewVacation), VPostSC, VPostEC);
+
+            $("input").val(""); 
+            $("#submitVacationsBtn").attr("disabled", true);
+        }
+
+        function VPostSC(res){
+            console.log(res);
+        }
+
+        function VPostEC(err) {
+            console.log(err);
+            alert("Order failed Try again!");
+        }
+
+
+        function RenderUserVacations() {
+
+            ajaxCall("GET", api, "", VGetSC, VGetEC);
+           
+        }
+
+        function VGetSC(VacationsListFromServer) {
+
+            console.log("Get sucsses!");
+
+            user = GetSessionStorageUser();
+             userEmail = user.email;
+             userVacations = [];
+
+            for (var i = 0; i < VacationsListFromServer.length; i++) {
+                if (VacationsListFromServer[i].userEmail == userEmail) {
+                    userVacations.push(VacationsListFromServer[i]);
+                }
+            }
+
+            let tempVStr = "";
+
+            for (var i = 0; i < userVacations.length; i++) {
+                tempVStr += `<div class="col-4 card" style="width: 18rem;">
+            <div class="card-body">
+            <h5 class="card-title"> Vacation id ${userVacations[i].id}</h5>
+            <p class="card-text"> User id: ${userVacations[i].userEmail}</p>
+            <p class="card-text"> Flat id: ${userVacations[i].flatId}</p>
+            <p class="card-text"> Start date: ${userVacations[i].startDate.split("T")[0]}</p>
+            <p class="card-text"> End date: ${userVacations[i].endDate.split("T")[0]}</p>
+            </div>
+            </div>`;
+            }
+
+            $("#VacationsRowPH").html(tempVStr);
+        }
+
+
+        function VGetEC(err) {
+
+            let tempVStr = `<p id="noVacP">"You don't have Vacations!"</p>`;
+            $("#VacationsRowPH").html(tempVStr);
+        }
+
+    </script>
+</head>
+<body>
+
+    <div class="container" id="FormVContainer">
+        <button type="button" id="logOutVacationBTN" class="btn btn-outline-danger btn-sm">Log Out</button><br />
+
+        <h2> Enter new Vacation:</h2>
+        <form id="VacationsForm">
+            <div class="form-group">
+                <label>User Email:</label>
+                <input type="text" class="form-control" id="userIdVInp" placeholder="Enter user Email" readonly required>
+            </div>
+
+            <div class="form-group">
+                <label>Flat id:</label>
+                <input type="number" class="form-control" id="flatIdVInp" readonly required>
+            </div>
+
+            <div class="form-group">
+                <label>Start date:</label>
+                <input type="date" class="form-control" id="startDateVInp" placeholder="Enter start date" required>
+            </div>
+
+            <div class="form-group">
+                <label>End date:</label>
+                <input type="date" class="form-control" id="endDateVInp" placeholder="Enter end date" required>
+            </div>
+
+            <button type="submit" class="btn btn-success" id="submitVacationsBtn">Submit Vacation</button>
+        </form>
+    </div>
+
+        <div class="container">
+
+            <div class="row" id="VacationsRowBtn">
+                <button class=" col-12 btn " id="BtnShowVactions" 
+                        onclick="RenderUserVacations()">Get All My Vacations</button>
+            </div>
+            <div class="row" id="VacationsRowPH"></div>
+        </div>
+
+</body>
+</html>

@@ -1,0 +1,6 @@
+@EX4serverAirbnb_HostAddress = http://localhost:5036
+
+GET {{EX4serverAirbnb_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
